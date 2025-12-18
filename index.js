@@ -5,9 +5,11 @@ import {
   decreaseLoginCount,
   generateEducationPdf,
   getAllUsers,
+  getUserData,
   increaseLoginCount,
   increasePdfLimit,
   register,
+  updateUserData,
 } from "./apis/index.js";
 
 /**
@@ -50,10 +52,10 @@ async function main() {
   const registerResult = await register(username, password);
   console.log("注册结果", registerResult); */
 
-  const users = await getAllUsers();
-  console.log("users", users);
+  /* const users = await getAllUsers();
+  console.log("users", users); */
 
-  let index = 0;
+  /*   let index = 0;
   for (const user of users) {
     try {
       const { username, password, remaining_logins, pdf_limit } = user;
@@ -78,7 +80,7 @@ async function main() {
     } catch (error) {
       console.log("error", error);
     }
-  }
+  } */
 
   /* // 减登录次数
   console.log("减登录次数", username);
@@ -96,9 +98,9 @@ async function main() {
   const resetUserLoginsResult = await resetUserLogins(username);
   console.log("重置登录次数结果", resetUserLoginsResult); */
 
-  // console.log("生成教育PDF", username);
-  // const generateEducationPdfResult = await generateEducationPdf();
-  // console.log("生成教育PDF结果", generateEducationPdfResult);
+  /* console.log("生成教育PDF", username);
+  const generateEducationPdfResult = await generateEducationPdf();
+  console.log("生成教育PDF结果", generateEducationPdfResult); */
   /* const generateEducationTasks = Array.from({ length: 10000000 }, (_, index) => async () => {
     const username = generateUsername();
     const password = generatePassword();
@@ -107,6 +109,16 @@ async function main() {
     console.log("生成教育PDF结果", generateEducationPdfResult);
   });
   await promiseLimit(generateEducationTasks, 100); */
+
+/*   const userId = "2724793a-a01b-41fd-8d91-3fa47851a39e";
+  const userData = await getUserData(userId);
+  console.log("userData", userData);
+  for (const data of userData.student_status) {
+    const { id } = data;
+    console.log("id", id);
+    await updateUserData(userId, { id });
+    await sleep(5000);
+  } */
 }
 
 main();

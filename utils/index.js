@@ -119,3 +119,32 @@ export const sleep = ms =>
       res();
     }, ms)
   );
+
+  /**
+ * 生成签名
+ * @param {string} method - HTTP方法，如"POST"、"GET"
+ * @param {string} url - 请求url
+ * @param {Object} data - 请求体对象
+ * @param {string} timestamp - 时间戳字符串
+ * @returns {string} 签名字符串（16进制）
+ */
+export const generateSignature = (method, url, data, timestamp) => {
+  const secretKey = "edit_my_degree_api_secret_key";
+  const sortedDataStr = Object.keys(data)
+    .sort()
+    .map(key => `${key}=${data[key]}`)
+    .join("&");
+  const baseString = `${method.toUpperCase()}${url}${sortedDataStr}${timestamp}`;
+  let hash = 0;
+  for (let i = 0; i < baseString.length; i++) {
+    const charCode = baseString.charCodeAt(i);
+    hash = (hash << 5) - hash + charCode;
+    hash = hash & hash;
+  }
+  for (let i = 0; i < secretKey.length; i++) {
+    const charCode = secretKey.charCodeAt(i);
+    hash = (hash << 5) - hash + charCode;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16);
+}

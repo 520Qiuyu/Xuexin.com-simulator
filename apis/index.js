@@ -1,15 +1,32 @@
 import axios from "axios";
-import { fileToBase64 } from "../utils/index.js";
+import { fileToBase64, generateSignature } from "../utils/index.js";
 import path from "path";
 import dayjs from "dayjs";
 import fs from "fs";
 
 const BASE_URL = "http://chsiii.cn:9092";
 
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    "X-Timestamp": Date.now().toString(),
+    "X-App-Key": "sadwgfsefsdgfsdgf",
+  },
+});
+
+axiosInstance.interceptors.request.use(config => {
+  const timestamp = Date.now().toString();
+  const { method, url, data } = config;
+  config.headers["X-Timestamp"] = timestamp;
+  config.headers["X-App-Key"] = "sadwgfsefsdgfsdgf";
+  config.headers["X-Signature"] = generateSignature(method, url, data || {}, timestamp);
+  return config;
+});
+
 /** 注册 */
 export const register = async (username, password) => {
   try {
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       `${BASE_URL}/api/register`,
       {
         username: username,
@@ -44,7 +61,7 @@ export const register = async (username, password) => {
 
 /** 增加积分 */
 export const increasePdfLimit = async (username, increaseAmount = 100) => {
-  const response = await axios.post(`${BASE_URL}/api/increase-pdf-limit`, {
+  const response = await axiosInstance.post("/api/increase-pdf-limit", {
     username,
     increaseAmount,
   });
@@ -53,7 +70,7 @@ export const increasePdfLimit = async (username, increaseAmount = 100) => {
 
 /** 扣除积分 */
 export const decreasePdfLimit = async (username, decreaseAmount = 100) => {
-  const response = await axios.post(`${BASE_URL}/api/decrease-pdf-limit`, {
+  const response = await axiosInstance.post("/api/decrease-pdf-limit", {
     username,
     decreaseAmount,
   });
@@ -62,7 +79,7 @@ export const decreasePdfLimit = async (username, decreaseAmount = 100) => {
 
 /** 重置积分 */
 export const resetPdfLimit = async username => {
-  const response = await axios.post(`${BASE_URL}/api/reset-pdf-limit`, {
+  const response = await axiosInstance.post("/api/reset-pdf-limit", {
     username,
   });
   return response.data;
@@ -70,7 +87,7 @@ export const resetPdfLimit = async username => {
 
 /** 增加登录次数 */
 export const increaseLoginCount = async (username, addLogins = 10000000) => {
-  const response = await axios.post(`${BASE_URL}/api/update-user-logins`, {
+  const response = await axiosInstance.post("/api/update-user-logins", {
     username,
     addLogins,
   });
@@ -79,7 +96,7 @@ export const increaseLoginCount = async (username, addLogins = 10000000) => {
 
 /** 减少登录次数 */
 export const decreaseLoginCount = async (username, decreaseLogins = 10000000) => {
-  const response = await axios.post(`${BASE_URL}/api/decrease-user-logins`, {
+  const response = await axiosInstance.post("/api/decrease-user-logins", {
     username,
     decreaseLogins,
   });
@@ -88,7 +105,7 @@ export const decreaseLoginCount = async (username, decreaseLogins = 10000000) =>
 
 /** 重置登录次数 */
 export const resetUserLogins = async username => {
-  const response = await axios.post(`${BASE_URL}/api/reset-user-logins`, {
+  const response = await axiosInstance.post("/api/reset-user-logins", {
     username,
   });
   return response.data;
@@ -115,7 +132,7 @@ export const generateEducationPdf = async d => {
     photo = defaultPhoto,
   } = d || {};
 
-  const response = await axios.post(`${BASE_URL}/api/generate-education-pdf`, {
+  const response = await axiosInstance.post("/api/generate-education-pdf", {
     name,
     gender,
     birthDate: dayjs(birthDate).format("YYYY年MM月DD日"),
@@ -158,7 +175,7 @@ export const generateEducationPdf = async d => {
  */
 export const getAllUsers = async () => {
   try {
-    const res = await axios.post(`${BASE_URL}/api/get-all-users`);
+    const res = await axiosInstance.post("/api/get-all-users");
     if (res.data.success) {
       const users = res.data.users;
       // 保存到文件 users.json
@@ -168,10 +185,42 @@ export const getAllUsers = async () => {
       throw new Error(res.data.error || "获取用户列表失败");
     }
   } catch (error) {
-    console.log('error',error)
+    console.log("error", error);
     console.error("获取用户列表失败:", error.message);
     if (error.response) {
       console.error("响应数据:", error.response.data);
     }
   }
+};
+
+/** 获取用户数据 */
+export const getUserData = async userId => {
+  const response = await axiosInstance.post("/api/get-user-data", {
+    userId,
+  });
+  return response.data;
+};
+
+/** 更新用户数据 */
+export const updateUserData = async (userId, data) => {
+  const {
+    id,
+    degree_photo = await fileToBase64(
+      path.resolve(
+        process.cwd(),
+        "assets/pdf/中国高等教育学位在线验证报告_赵子余_1765938239890.pdf"
+      )
+    ),
+  } = data || {};
+  const payload = {
+    action: "update",
+    table: "student_status",
+    userId: userId,
+    id: id,
+    data: {
+      degree_photo: degree_photo,
+    },
+  };
+  const response = await axiosInstance.post("/api/update-data", payload);
+  return response.data;
 };
